@@ -21,15 +21,21 @@ APNAME="WiFiAP"
 SSID="ardupilot"
 KEY="ardupilot"
 
+if [[ $# -eq 0 ]] ; then
+    echo 'Setting wlan0 as IFNAME'
+    IFNAME=wlan0
+else
+    IFNAME=$1
+fi
+
 # add IP address range to /etc/dnsmasq.conf
 dd of=/etc/dnsmasq.d/$APNAME.conf <<EOF
-interface=wlan0
+interface=$IFNAME
 dhcp-range=10.0.1.129,10.0.1.138,12h
 EOF
 
 sudo systemctl disable dnsmasq
 
-IFNAME=wlan0
 nmcli connection add type wifi ifname $IFNAME con-name $APNAME ssid $SSID
 nmcli connection modify $APNAME connection.autoconnect yes
 nmcli connection modify $APNAME 802-11-wireless.mode ap

@@ -1,0 +1,53 @@
+# Setup script for Intel Core/Atom devices as companion computer
+# Focusing on NUC and compute sticks with Ubuntu 16.04
+
+# Login to the system and install the following pre requisites
+sudo apt-get install -y git openssh*
+
+# create an apsync user:
+sudo useradd -s /bin/bash -m -U -G sudo,netdev,users,dialout,video apsync
+sudo passwd apsync # apsync
+
+# set up git proxies to work under corporate networks
+# log out
+
+# proceed working as the apsync user over ssh:
+ssh-copy-id apsync@<ip address>
+ssh apsync@<ip address>
+
+time sudo apt-get update
+
+pushd ~
+mkdir GitHub
+pushd ~/GitHub
+time git clone https://github.com/ArduPilot/companion.git
+pushd companion/Intel/computestick
+
+# Run the preliminary scripts
+sudo ./set-hostname   # reset the machine's hostname
+time sudo ./2_install_packages.sh # 20m
+time sudo ./install_niceties || echo "Failed"  # 45s
+time sudo ./3_wifi_access_point.sh wlp1s0
+sudo reboot # wifi up needs a reboot
+sudo nmcli c u WiFiAP # bring it up once on reboot
+
+pushd ~/GitHub/companion/Intel
+time sudo ./4_setup_cmavnode.sh # ~10m
+time sudo ./5_dflogger.sh # ~15m
+time sudo ./6_setup_mavproxy.sh # ~3s
+
+#time sudo ./setup_video_streaming || echo "Failed"  # 1m
+#time sudo ./install_avahi # 46s
+
+time sudo apt-get install -y libxml2-dev libxslt1.1 libxslt1-dev # 3s
+time sudo pip install future lxml # 4m
+time sudo ./install_pymavlink # new version required for apweb #1m
+time sudo ./install_apweb # 2m
+
+# REMEMBER: set dataflash logging up on the autopilot!
+# param set SERIAL2_BAUD 921600
+# param set LOG_BACKEND_TYPE 3
+
+# reboot...
+sudo reboot
+
